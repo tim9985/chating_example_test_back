@@ -4,10 +4,17 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const app = express();
 app.use(cors());
+app.use(express.json()); // JSON 요청을 파싱하기 위해 추가
 
+// 1. chat.js 라우터 불러오기
+const chatRoutes = require("./routes/chat"); 
 
+//3. Db 연결
 mongoose.connect(process.env.DB)
   .then(() => console.log("✅ DB 연결 성공"))
   .catch((err) => console.error("❌ DB 연결 실패:", err));
 
-  module.exports = app
+// 3. /api/chats 경로에 라우터 등록
+app.use("/api/chats", chatRoutes); 
+
+module.exports = app
