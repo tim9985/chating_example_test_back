@@ -1,14 +1,18 @@
 const chat = require("../models/chat");
 const chatController = {};
 
-chatController.saveChat = async(message, user)=>{
+chatController.saveChat = async(message, user, emoticon)=>{
+    
     const newMessage = new chat({
         chat:message,
         user:{
             id:user._id,
             name:user.name
-        }
+        },
+        
+        emoticon: emoticon
     });
+
     await newMessage.save();
     return newMessage;
 };
