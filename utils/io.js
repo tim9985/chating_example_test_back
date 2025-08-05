@@ -36,57 +36,57 @@ function findTopEmotion(resultString) {
 }
 
 module.exports = function (io) {
-    // 클라이언트가 연결되었을 때의 기본 설정
     io.on("connection", async (socket) => {
         console.log("🟢  새 클라이언트:", socket.id);
 
-        // 사용자가 로그인했을 때의 이벤트 처리 
-        socket.on("login", async (userName, cb) => {
+        // 회원가입 이벤트
+        socket.on("register", async ({ name, password }, cb) => {
             try {
-                const user = await userController.saveUser(userName, socket.id);
-                const welcomeMessage = {
-                    chat: `${user.name} is joined to this room`,
-                    user: { id: null, name: "system" },
-                };
-                io.emit("message", welcomeMessage);
-                cb({ ok: true, data: user });
+                const user = await userController.registerUser(name, password, socket.id);
+                cb({ ok: true, user });
             } catch (error) {
                 cb({ ok: false, error: error.message });
             }
         });
 
-        // ▼▼▼▼▼ 여기가 바로 두 서버가 소통하는 핵심 부분입니다 ▼▼▼▼▼
-        // 사용자가 메시지를 보냈을 때의 이벤트 처리
+        // 로그인 이벤트 (이름+비번)
+        socket.on("login", async ({ name, password }, cb) => {
+            try {
+                const user = await userController.loginUser(name, password, socket.id);
+                const welcomeMessage = {
+                    chat: `${user.name} is joined to this room`,
+                    user: { id: null, name: "system" },
+                };
+                io.emit("message", welcomeMessage);
+                cb({ ok: true, user });
+            } catch (error) {
+                cb({ ok: false, error: error.message });
+            }
+        });
+
+        // sendMessage 등 이하 기존 코드 동일
         socket.on("sendMessage", async (message, cb) => {
             try {
                 const user = await userController.checkUser(socket.id);
-                let emoticon = ""; // 숫자 태그를 저장할 변수
-
+                let emoticon = "";
                 try {
                     const response = await axios.post(AI_API_URL, { sentence: message });
-                    const resultString = response.data.result; // 예: "{'화남': 43.21, '슬픔': 22.71}"
-                    console.log("🤖 AI 서버로부터 받은 원본 응답:", resultString);
-
-                    // --- ▼▼▼▼▼ 여기가 핵심 수정사항입니다 ▼▼▼▼▼ ---
-                    // 1. 위에서 만든 '해독기'로 가장 점수가 높은 감정을 찾아냅니다.
+                    const resultString = response.data.result;
                     const topEmotion = findTopEmotion(resultString);
-                    console.log("👑 가장 높은 감정:", topEmotion);
-
-                    // 2. 찾아낸 최고 감정에 따라 숫자 태그를 할당합니다.
+                    // 이모티콘 매핑 코드 ...
                     if (topEmotion === '화남') {
-                        emoticon = '😡'; // 또는 '\u{1F620}'
+                        emoticon = '😡';
                     } else if (topEmotion === '불안') {
-                        emoticon = '😟'; // 또는 '\u{1F625}' (유사한 이모티콘으로 대체)
+                        emoticon = '😟';
                     } else if (topEmotion === '당황') {
-                        emoticon = '😳'; // 또는 '\u{1F633}'
+                        emoticon = '😳';
                     } else if (topEmotion === '행복') {
-                        emoticon = '😊'; // 또는 '\u{1F604}'
-                    } else if (topEmotion === '상심') { // 상심과 슬픔을 구분하려면 모델이 더 세분화되어야 합니다.
-                        emoticon = '💔'; // 또는 '\u{1F494}'
+                        emoticon = '😊';
+                    } else if (topEmotion === '상심') {
+                        emoticon = '💔';
                     } else if (topEmotion === '슬픔') {
-                        emoticon = '😭'; // 또는 '\u{1F622}'
+                        emoticon = '😭';
                     }
-
                 } catch (aiError) {
                     console.error("AI 서버와 통신 중 오류 발생:", aiError.message);
                 }
@@ -94,14 +94,11 @@ module.exports = function (io) {
                 const newMessage = await chatController.saveChat(message, user, emoticon);
                 io.emit("message", newMessage);
                 cb({ ok: true });
-
             } catch (error) {
                 cb({ ok: false, error: error.message });
             }
         });
-        // ▲▲▲▲▲ 여기까지가 두 서버의 소통이 일어나는 곳입니다 ▲▲▲▲▲
 
-        // 사용자가 연결을 끊었을 때의 이벤트 처리 (기존과 동일)
         socket.on("disconnect", () => {
             console.log("🔴  연결 해제:", socket.id);
         });

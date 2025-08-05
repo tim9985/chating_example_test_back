@@ -1,3 +1,4 @@
+//Controllers/chat.controller.js
 const chat = require("../models/chat");
 const chatController = {};
 
