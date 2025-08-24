@@ -42,30 +42,33 @@ module.exports = function (io) {
 
 
         socket.on("sendMessage", async (message, cb) => {
-            try {
-                const user = await userController.checkUser(socket.id);
-                let textForDB = message; // 기본 원본
-                let emojiForDB = "";
-
-                try {
-                    const response = await axios.post(AI_API_URL, { sentence: message });
-                    if (response.data) {
-                        textForDB = response.data.text || message;
-                        emojiForDB = response.data.emoji || "";
-                    }
-                } catch (err) {
-                    console.error("AI 서버 통신 오류:", err.message);
-                }
-
-                // DB에 문장(text)과 이모티콘(emoji) 따로 저장
-                const newMessage = await chatController.saveChat(textForDB, user, emojiForDB);
-
-                io.emit("message", newMessage);
-                cb({ ok: true });
-            } catch (error) {
-                cb({ ok: false, error: error.message });
-            }
-        });
+          try {
+              const user = await userController.checkUser(socket.id);
+              
+              // ❗ 수정된 부분: 변수 선언을 let으로 바꾸고 topEmotionForDB 변수를 추가합니다.
+              let textForDB = message;
+              let emojiForDB = "";
+      
+              try {
+                  const response = await axios.post(AI_API_URL, { sentence: message });
+                  if (response.data) {
+                      // ❗ 수정된 부분: AI 서버로부터 topEmotion 데이터를 받습니다.
+                      textForDB = response.data.text || message;
+                      emojiForDB = response.data.emoji || "";
+                  }
+              } catch (err) {
+                  console.error("AI 서버 통신 오류:", err.message);
+              }
+      
+              // ❗ 수정된 부분: DB에 저장할 때 topEmotionForDB도 함께 넘겨줍니다.
+              const newMessage = await chatController.saveChat(textForDB, user, emojiForDB);
+      
+              io.emit("message", newMessage);
+              cb({ ok: true });
+          } catch (error) {
+              cb({ ok: false, error: error.message });
+          }
+      });
 
 
         socket.on("disconnect", () => {

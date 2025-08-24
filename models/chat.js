@@ -11,12 +11,14 @@ const chatSchema = new mongoose.Schema(
             },
             name: String,
         },
-        // --- ▼▼▼▼▼ 바로 이 부분을 추가해야 합니다 ▼▼▼▼▼ ---
         emoticon: {
-            type: String, // 숫자 태그 '1', '2' 또는 이모티콘 '😊' 등을 저장
-            default: ''   // 기본값은 빈 문자열로 설정
+            type: String,
+            default: ''
+        },
+        topEmotion: {  // ✅ 감정 결과 저장
+            type: String,
+            default: '중립'
         }
-        
     },
     { timestamps: true }
 );
