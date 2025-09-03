@@ -4,7 +4,12 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const app = express();
-app.use(cors());
+const corsOptions = {
+  origin: "*",
+  credentials: true, 
+};
+
+app.use(cors(corsOptions));
 app.use(express.json()); // JSON 요청을 파싱하기 위해 추가
 
 // 1. chat.js 라우터 불러오기
